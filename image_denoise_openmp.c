@@ -1,24 +1,24 @@
-# include <omp.h>
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include <time.h>
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-int main ( int argc, char *argv[] );
-int int_cmp ( const void * pointer1, const void * pointer2 );
-void median_news_filter ( int m, int n, int color[] );
-void ppma_read_data ( FILE *input, int xsize, int ysize, int *r, int *g, int *b );
-void ppma_read_header ( FILE *input, int *xsize, int *ysize, int *rgb_max );
-int ppma_write ( char *file_out_name, int xsize, int ysize, int *r,
-  int *g, int *b );
-int ppma_write_data ( FILE *file_out, int xsize, int ysize, int *r,
-  int *g, int *b );
-int ppma_write_header ( FILE *file_out, char *file_out_name, int xsize,
-  int ysize, int rgb_max );
+int main(int argc, char *argv[]);
+int int_cmp(const void *pointer1, const void *pointer2);
+void median_news_filter(int m, int n, int color[]);
+void ppma_read_data(FILE *input, int xsize, int ysize, int *r, int *g, int *b);
+void ppma_read_header(FILE *input, int *xsize, int *ysize, int *rgb_max);
+int ppma_write(char *file_out_name, int xsize, int ysize, int *r,
+               int *g, int *b);
+int ppma_write_data(FILE *file_out, int xsize, int ysize, int *r,
+                    int *g, int *b);
+int ppma_write_header(FILE *file_out, char *file_out_name, int xsize,
+                      int ysize, int rgb_max);
 
 /******************************************************************************/
 
-int main ( int argc, char *argv[] )
+int main(int argc, char *argv[])
 
 /******************************************************************************/
 /*
@@ -41,76 +41,83 @@ int main ( int argc, char *argv[] )
 {
   int *b;
   int *g;
-  char input_filename[] = "./images/ice_mountain_p3.ppm";
+  char input_filename[] = "./images/tw2_p3.ppm";
   FILE *input_unit;
   int m;
   int n;
-  char output_filename[] = "./denoised_images/ice_mountain_p3_median.ppm";
+  char output_filename[] = "./denoised_images/tw2_p3_median.ppm";
   int *r;
   int rgb_max;
 
-  printf ( "\n" );
-  printf ( "IMAGE_DENOISE_OPENMP\n" );
-  printf ( "  C version\n" );
-  printf ( "  Remove noise from an image.\n" );
-/*
+  
+
+  printf("\n");
+  printf("IMAGE_DENOISE_OPENMP\n");
+  printf("  C version\n");
+  printf("  Remove noise from an image.\n");
+  printf("\n");
+  /*
   Open the input file and read the data.
 */
-  input_unit = fopen ( input_filename, "r" );
 
-  if ( ! input_unit )
+  omp_set_num_threads(8);
+  printf("  Number of threads = %d", omp_get_max_threads());
+
+  input_unit = fopen(input_filename, "r");
+
+  if (!input_unit)
   {
-    fprintf ( stderr, "\n" );
-    fprintf ( stderr, "IMAGE_DENOISE_OPENMP - Fatal error!\n" );
-    fprintf ( stderr, "  Could not open the file \"%s\"\n", input_filename );
-    exit ( 1 );
+    fprintf(stderr, "\n");
+    fprintf(stderr, "IMAGE_DENOISE_OPENMP - Fatal error!\n");
+    fprintf(stderr, "  Could not open the file \"%s\"\n", input_filename);
+    exit(1);
   }
 
-  ppma_read_header ( input_unit, &m, &n, &rgb_max );
+  ppma_read_header(input_unit, &m, &n, &rgb_max);
 
-  printf ( "\n" );
-  printf ( "  Number of rows =          %d\n", m );
-  printf ( "  Number of columns =       %d\n", n );
-  printf ( "  Maximum pixel intensity = %d\n", rgb_max );
+  printf("\n");
+  printf("  Number of rows =          %d\n", m);
+  printf("  Number of columns =       %d\n", n);
+  printf("  Maximum pixel intensity = %d\n", rgb_max);
 
-  r = ( int * ) malloc ( m * n * sizeof ( int ) );
-  g = ( int * ) malloc ( m * n * sizeof ( int ) );
-  b = ( int * ) malloc ( m * n * sizeof ( int ) );
+  r = (int *)malloc(m * n * sizeof(int));
+  g = (int *)malloc(m * n * sizeof(int));
+  b = (int *)malloc(m * n * sizeof(int));
 
-  ppma_read_data ( input_unit, m, n, r, g, b );
+  ppma_read_data(input_unit, m, n, r, g, b);
 
-  fclose ( input_unit );
-/*
+  fclose(input_unit);
+  /*
   Filter the file.
 */
-  median_news_filter ( m, n, r );
-  median_news_filter ( m, n, g );
-  median_news_filter ( m, n, b );
-/*
+  median_news_filter(m, n, r);
+  median_news_filter(m, n, g);
+  median_news_filter(m, n, b);
+  /*
   Write the filtered image.
 */
-  ppma_write ( output_filename, m, n, r, g, b );
+  ppma_write(output_filename, m, n, r, g, b);
 
-  printf ( "\n" );
-  printf ( "  Wrote denoised image to \"%s\".\n", output_filename );
-/*
+  printf("\n");
+  printf("  Wrote denoised image to \"%s\".\n", output_filename);
+  /*
   Free memory.
 */
-  free ( r );
-  free ( g );
-  free ( b );
-/*
+  free(r);
+  free(g);
+  free(b);
+  /*
   Terminate.
 */
-  printf ( "\n" );
-  printf ( "IMAGE_DENOISE_OPENMP\n" );
-  printf ( "  Normal end of execution.\n" );
+  printf("\n");
+  printf("IMAGE_DENOISE_OPENMP\n");
+  printf("  Normal end of execution.\n");
 
   return 0;
 }
 /******************************************************************************/
 
-void median_news_filter ( int m, int n, int color[] )
+void median_news_filter(int m, int n, int color[])
 
 /******************************************************************************/
 /*
@@ -143,60 +150,61 @@ void median_news_filter ( int m, int n, int color[] )
   int j;
   int p[5];
 
-  color2 = ( int * ) malloc ( m * n * sizeof ( int ) );
+  color2 = (int *)malloc(m * n * sizeof(int));
 /*
   Process the main part of the image.
   Ignore edges and corners.
 */
-# pragma omp parallel \
-  private ( i, j, p ) \
-  shared ( color, color2, m, n )
-{
-# pragma omp for
 
-  for ( i = 1; i < m - 1; i++ )
+ 
+
+#pragma omp parallel private(i, j, p) \
+    shared(color, color2, m, n)
   {
-    for ( j = 1; j < n - 1; j++ )
+#pragma omp for
+
+    for (i = 1; i < m - 1; i++)
     {
-      p[0] = color[i-1+ j   *m];
-      p[1] = color[i+1+ j   *m];
-      p[2] = color[i  +(j+1)*m];
-      p[3] = color[i  +(j-1)*m];
-      p[4] = color[i  + j   *m];
+      for (j = 1; j < n - 1; j++)
+      {
+        p[0] = color[i - 1 + j * m];
+        p[1] = color[i + 1 + j * m];
+        p[2] = color[i + (j + 1) * m];
+        p[3] = color[i + (j - 1) * m];
+        p[4] = color[i + j * m];
 
-      qsort ( p, 5, sizeof ( int ), int_cmp );
+        qsort(p, 5, sizeof(int), int_cmp);
 
-      color2[i+j*m] = p[2];
+        color2[i + j * m] = p[2];
+      }
     }
   }
-}
 /*
   Overwrite old data.
 */
-# pragma omp parallel \
-  private ( i, j ) \
-  shared ( color, color2, m, n )
-{
-# pragma omp for
-
-  for ( i = 1; i < m - 1; i++ )
+#pragma omp parallel private(i, j) \
+    shared(color, color2, m, n)
   {
-    for ( j = 1; j < n - 1; j++ )
+#pragma omp for
+
+    for (i = 1; i < m - 1; i++)
     {
-      color[i+j*m] = color2[i+j*m];
+      for (j = 1; j < n - 1; j++)
+      {
+        color[i + j * m] = color2[i + j * m];
+      }
     }
   }
-}
-/*
+  /*
   Free memory.
 */
-  free ( color2 );
+  free(color2);
 
   return;
 }
 /******************************************************************************/
 
-int int_cmp ( const void * pointer1, const void * pointer2 )
+int int_cmp(const void *pointer1, const void *pointer2)
 
 /******************************************************************************/
 /*
@@ -227,14 +235,14 @@ int int_cmp ( const void * pointer1, const void * pointer2 )
   int a;
   int b;
   int value;
-  a = * ( ( int * ) pointer1 );
-  b = * ( ( int * ) pointer2 );
+  a = *((int *)pointer1);
+  b = *((int *)pointer2);
 
-  if ( a < b )
+  if (a < b)
   {
     value = -1;
   }
-  else if ( a == b )
+  else if (a == b)
   {
     value = 0;
   }
@@ -247,7 +255,7 @@ int int_cmp ( const void * pointer1, const void * pointer2 )
 }
 /******************************************************************************/
 
-void ppma_read_data ( FILE *input, int xsize, int ysize, int *r, int *g, int *b )
+void ppma_read_data(FILE *input, int xsize, int ysize, int *r, int *g, int *b)
 
 /******************************************************************************/
 /*
@@ -284,20 +292,20 @@ void ppma_read_data ( FILE *input, int xsize, int ysize, int *r, int *g, int *b 
 
   p = 0;
 
-  for ( j = 0; j < ysize; j++ )
+  for (j = 0; j < ysize; j++)
   {
-    for ( i = 0; i < xsize; i++ )
+    for (i = 0; i < xsize; i++)
     {
-      n = fscanf ( input, "%d %d %d", r, g, b );
+      n = fscanf(input, "%d %d %d", r, g, b);
 
-      if ( n != 3 )
+      if (n != 3)
       {
-        fprintf ( stderr, "\n" );
-        fprintf ( stderr, "PPMA_READ_DATA - Fatal error!\n" );
-        fprintf ( stderr, "  Unable to read data.\n" );
-        fprintf ( stderr, "  FSCANF returns N = %d\n", n );
-        fprintf ( stderr, "  Number of pixels already read is %d\n", p );
-        exit ( 1 );
+        fprintf(stderr, "\n");
+        fprintf(stderr, "PPMA_READ_DATA - Fatal error!\n");
+        fprintf(stderr, "  Unable to read data.\n");
+        fprintf(stderr, "  FSCANF returns N = %d\n", n);
+        fprintf(stderr, "  Number of pixels already read is %d\n", p);
+        exit(1);
       }
       p = p + 1;
       r = r + 1;
@@ -309,7 +317,7 @@ void ppma_read_data ( FILE *input, int xsize, int ysize, int *r, int *g, int *b 
 }
 /******************************************************************************/
 
-void ppma_read_header ( FILE *input, int *xsize, int *ysize, int *rgb_max )
+void ppma_read_header(FILE *input, int *xsize, int *ysize, int *rgb_max)
 
 /******************************************************************************/
 /*
@@ -339,7 +347,7 @@ void ppma_read_header ( FILE *input, int *xsize, int *ysize, int *rgb_max )
     Output, int *RGB_MAX, the maximum RGB value.
 */
 {
-# define LINE_MAX 255
+#define LINE_MAX 255
 
   int count;
   char *error;
@@ -351,87 +359,86 @@ void ppma_read_header ( FILE *input, int *xsize, int *ysize, int *rgb_max )
 
   step = 0;
 
-  while ( 1 )
+  while (1)
   {
-    error = fgets ( line, LINE_MAX, input );
+    error = fgets(line, LINE_MAX, input);
 
-    if ( !error )
+    if (!error)
     {
-      fprintf ( stderr, "\n" );
-      fprintf ( stderr, "PGMA_READ_HEADER - Fatal error!\n" );
-      fprintf ( stderr, "  End of file.\n" );
-      exit ( 1 );
+      fprintf(stderr, "\n");
+      fprintf(stderr, "PGMA_READ_HEADER - Fatal error!\n");
+      fprintf(stderr, "  End of file.\n");
+      exit(1);
     }
 
     next = line;
 
-    if ( line[0] == '#' )
+    if (line[0] == '#')
     {
       continue;
     }
 
-    if ( step == 0 )
+    if (step == 0)
     {
-      count = sscanf ( next, "%s%n", word, &width );
-      if ( count == EOF )
+      count = sscanf(next, "%s%n", word, &width);
+      if (count == EOF)
       {
         continue;
       }
       next = next + width;
-      if ( strcmp ( word, "P3" ) != 0 && strcmp ( word, "p3" ) != 0 )
+      if (strcmp(word, "P3") != 0 && strcmp(word, "p3") != 0)
       {
-        fprintf ( stderr, "\n" );
-        fprintf ( stderr, "PPMA_READ_HEADER - Fatal error.\n" );
-        fprintf ( stderr, "  Bad magic number = \"%s\".\n", word );
-        exit ( 1 );
+        fprintf(stderr, "\n");
+        fprintf(stderr, "PPMA_READ_HEADER - Fatal error.\n");
+        fprintf(stderr, "  Bad magic number = \"%s\".\n", word);
+        exit(1);
       }
       step = 1;
     }
 
-    if ( step == 1 )
+    if (step == 1)
     {
 
-      count = sscanf ( next, "%d%n", xsize, &width );
+      count = sscanf(next, "%d%n", xsize, &width);
       next = next + width;
-      if ( count == EOF )
+      if (count == EOF)
       {
         continue;
       }
       step = 2;
     }
 
-    if ( step == 2 )
+    if (step == 2)
     {
-      count = sscanf ( next, "%d%n", ysize, &width );
+      count = sscanf(next, "%d%n", ysize, &width);
       next = next + width;
-      if ( count == EOF )
+      if (count == EOF)
       {
         continue;
       }
       step = 3;
     }
 
-    if ( step == 3 )
+    if (step == 3)
     {
-      count = sscanf ( next, "%d%n", rgb_max, &width );
+      count = sscanf(next, "%d%n", rgb_max, &width);
       next = next + width;
-      if ( count == EOF )
+      if (count == EOF)
       {
         continue;
       }
       break;
     }
-
   }
 
   return;
-# undef LINE_MAX
+#undef LINE_MAX
 }
 
 /******************************************************************************/
 
-int ppma_write ( char *file_out_name, int xsize, int ysize, int *r,
-  int *g, int *b )
+int ppma_write(char *file_out_name, int xsize, int ysize, int *r,
+               int *g, int *b)
 
 /******************************************************************************/
 /*
@@ -484,19 +491,19 @@ int ppma_write ( char *file_out_name, int xsize, int ysize, int *r,
   int j;
   int *r_index;
   int rgb_max;
-/*
+  /*
   Open the output file.
 */
-  file_out = fopen ( file_out_name, "wt" );
+  file_out = fopen(file_out_name, "wt");
 
-  if ( !file_out )
+  if (!file_out)
   {
-    printf ( "\n" );
-    printf ( "PPMA_WRITE - Fatal error!\n" );
-    printf ( "  Cannot open the output file \"%s\".\n", file_out_name );
+    printf("\n");
+    printf("PPMA_WRITE - Fatal error!\n");
+    printf("  Cannot open the output file \"%s\".\n", file_out_name);
     return 1;
   }
-/*
+  /*
   Compute the maximum.
 */
   rgb_max = 0;
@@ -504,64 +511,64 @@ int ppma_write ( char *file_out_name, int xsize, int ysize, int *r,
   g_index = g;
   b_index = b;
 
-  for ( j = 0; j < ysize; j++ )
+  for (j = 0; j < ysize; j++)
   {
-    for ( i = 0; i < xsize; i++ )
+    for (i = 0; i < xsize; i++)
     {
-      if ( rgb_max < *r_index )
+      if (rgb_max < *r_index)
       {
         rgb_max = *r_index;
       }
       r_index = r_index + 1;
 
-      if ( rgb_max < *g_index )
+      if (rgb_max < *g_index)
       {
         rgb_max = *g_index;
       }
       g_index = g_index + 1;
 
-      if ( rgb_max < *b_index )
+      if (rgb_max < *b_index)
       {
         rgb_max = *b_index;
       }
       b_index = b_index + 1;
     }
   }
-/*
+  /*
   Write the header.
 */
-  error = ppma_write_header ( file_out, file_out_name, xsize, ysize, rgb_max );
+  error = ppma_write_header(file_out, file_out_name, xsize, ysize, rgb_max);
 
-  if ( error )
+  if (error)
   {
-    printf ( "\n" );
-    printf ( "PPMA_WRITE - Fatal error!\n" );
-    printf ( "  PPMA_WRITE_HEADER failed.\n" );
+    printf("\n");
+    printf("PPMA_WRITE - Fatal error!\n");
+    printf("  PPMA_WRITE_HEADER failed.\n");
     return 1;
   }
-/*
+  /*
   Write the data.
 */
-  error = ppma_write_data ( file_out, xsize, ysize, r, g, b );
+  error = ppma_write_data(file_out, xsize, ysize, r, g, b);
 
-  if ( error )
+  if (error)
   {
-    printf ( "\n" );
-    printf ( "PPMA_WRITE - Fatal error!\n" );
-    printf ( "  PPMA_WRITE_DATA failed.\n" );
+    printf("\n");
+    printf("PPMA_WRITE - Fatal error!\n");
+    printf("  PPMA_WRITE_DATA failed.\n");
     return 1;
   }
-/*
+  /*
   Close the file.
 */
-  fclose ( file_out );
+  fclose(file_out);
 
   return 0;
 }
 /******************************************************************************/
 
-int ppma_write_data ( FILE *file_out, int xsize, int ysize, int *r,
-  int *g, int *b )
+int ppma_write_data(FILE *file_out, int xsize, int ysize, int *r,
+                    int *g, int *b)
 
 /******************************************************************************/
 /*
@@ -610,12 +617,12 @@ int ppma_write_data ( FILE *file_out, int xsize, int ysize, int *r,
   printf("xsize = %d\n", xsize);
   printf("ysize = %d\n", ysize);
 
-  for ( j = 0; j < ysize; j++ )
-  { 
-    fprintf ( file_out, " ");
-    for ( i = 0; i < xsize; i++ )
+  for (j = 0; j < ysize; j++)
+  {
+    fprintf(file_out, " ");
+    for (i = 0; i < xsize; i++)
     {
-      fprintf ( file_out, "%d %d %d ", *r_index, *g_index, *b_index );
+      fprintf(file_out, "%d %d %d ", *r_index, *g_index, *b_index);
       rgb_num = rgb_num + 3;
       r_index = r_index + 1;
       g_index = g_index + 1;
@@ -624,11 +631,11 @@ int ppma_write_data ( FILE *file_out, int xsize, int ysize, int *r,
       //if ( rgb_num % 12 == 0 || i == xsize - 1 || rgb_num == 3 * xsize * ysize )
       if (i == xsize - 1)
       {
-        fprintf ( file_out, "\n" );
+        fprintf(file_out, "\n");
       }
       else
       {
-        fprintf ( file_out, " " );
+        fprintf(file_out, " ");
       }
     }
   }
@@ -636,8 +643,8 @@ int ppma_write_data ( FILE *file_out, int xsize, int ysize, int *r,
 }
 /******************************************************************************/
 
-int ppma_write_header ( FILE *file_out, char *file_out_name, int xsize,
-  int ysize, int rgb_max )
+int ppma_write_header(FILE *file_out, char *file_out_name, int xsize,
+                      int ysize, int rgb_max)
 
 /******************************************************************************/
 /*
@@ -673,10 +680,10 @@ int ppma_write_header ( FILE *file_out, char *file_out_name, int xsize,
     false, if the header was written.
 */
 {
-  fprintf ( file_out, "P3\n" );
+  fprintf(file_out, "P3\n");
   //fprintf ( file_out, "# %s created by ppma_write.c.\n", file_out_name );
-  fprintf ( file_out, "%d  %d\n", xsize, ysize );
-  fprintf ( file_out, "%d\n", rgb_max );
+  fprintf(file_out, "%d  %d\n", xsize, ysize);
+  fprintf(file_out, "%d\n", rgb_max);
 
   return 0;
 }
