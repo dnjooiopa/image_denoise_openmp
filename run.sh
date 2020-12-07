@@ -1,3 +1,3 @@
 #! /bin/bash
 #
-gcc -c -Wall -fopenmp image_denoise_openmp.c
+gcc -fopenmp image_denoise_openmp.c && time ./a.out

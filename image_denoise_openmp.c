@@ -41,11 +41,11 @@ int main ( int argc, char *argv[] )
 {
   int *b;
   int *g;
-  char input_filename[] = "./images/profile_p3.ppm";
+  char input_filename[] = "./images/ice_mountain_p3.ppm";
   FILE *input_unit;
   int m;
   int n;
-  char output_filename[] = "./denoised_images/profile_p3_median.ppm";
+  char output_filename[] = "./denoised_images/ice_mountain_p3_median.ppm";
   int *r;
   int rgb_max;
 
