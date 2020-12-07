@@ -41,11 +41,11 @@ int main ( int argc, char *argv[] )
 {
   int *b;
   int *g;
-  char input_filename[] = "profile_p3.ppm";
+  char input_filename[] = "./images/profile_p3.ppm";
   FILE *input_unit;
   int m;
   int n;
-  char output_filename[] = "profile_p3_median.ppm";
+  char output_filename[] = "./denoised_images/profile_p3_median.ppm";
   int *r;
   int rgb_max;
 
@@ -674,7 +674,7 @@ int ppma_write_header ( FILE *file_out, char *file_out_name, int xsize,
 */
 {
   fprintf ( file_out, "P3\n" );
-  fprintf ( file_out, "# %s created by ppma_write.c.\n", file_out_name );
+  //fprintf ( file_out, "# %s created by ppma_write.c.\n", file_out_name );
   fprintf ( file_out, "%d  %d\n", xsize, ysize );
   fprintf ( file_out, "%d\n", rgb_max );
 
